@@ -1,0 +1,54 @@
+image: docker:stable
+
+services:
+  - docker:dind
+
+variables:
+  DOCKER_DRIVER: overlay2
+  GCP_ECR: $GCP_ECR
+  GCP_ECR_IMAGE: $GCP_ECR/$GCP_PROJECT/$CI_PROJECT_PATH:$CI_COMMIT_REF_NAME$CI_PIPELINE_ID
+  GCP_CLUSTER_PROJECT: $GCP_CLUSTER_PROJECT
+  GCP_REGION: $GCP_REGION
+  GCP_PROJECT: $GCP_PROJECT
+  KUBERNETES_DIR: "./gke"
+  APP_NAME: $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+  APP_NAMESPACE: $APP_NAMESPACE
+  # DOCKER_HOST: tcp://docker:2375/
+
+stages:
+  - build
+  - deploy
+
+gcp-build:
+  image: tasslin/gcloud:dind
+  tags:
+    - docker
+  stage: build
+  script:
+    - echo $GCP_KEY >> /.gitlab-ci.json
+    - gcloud auth activate-service-account --key-file /.gitlab-ci.json
+    - gcloud auth configure-docker
+    - docker build -t $GCP_ECR_IMAGE .
+    - docker push $GCP_ECR_IMAGE 
+
+
+gcp-deploy:
+  image: tasslin/gcloud:dind
+  stage: deploy
+  script:
+    - echo $GCP_KEY >> /.gitlab-ci.json
+
+    - gcloud auth activate-service-account --key-file /.gitlab-ci.json
+
+    - gcloud container clusters get-credentials $GCP_CLUSTER_PROJECT --region $GCP_REGION --project $GCP_PROJECT
+
+    - FIND=$(find "$KUBERNETES_DIR"  -type f -name "*.yml")
+
+    - echo "$FIND" | xargs -n1 -I{} sed -i -e 's/_APP_NAME_/'"$APP_NAME"'/g' -e 's/_APP_NAMESPACE_/'"$APP_NAMESPACE"'/g'  -e 's#_CONTAINER_IMAGE_#'"$GCP_ECR_IMAGE"'#g' {}
+
+    - kubectl apply -f "$KUBERNETES_DIR"
+
+    - kubectl rollout status "deployment/$APP_NAME" -n $APP_NAMESPACE
+
+
+
