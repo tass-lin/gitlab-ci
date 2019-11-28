@@ -3,10 +3,7 @@
 nginx:stable-alpine
 
 ## Step by step
-
-https://medium.com/@tasslin/1-%E9%9A%A8%E6%89%8B%E5%AF%AB%E5%AF%AB-docker-5afe4232b48e
-
-https://medium.com/@tasslin/%E9%9A%A8%E6%89%8B%E5%AF%AB%E5%AF%AB-docker-2-edfd47aeac12
+https://medium.com/@tasslin/%E9%9A%A8%E6%89%8B%E5%AF%AB%E5%AF%AB-gcp-5-gitlab-ci-gke-7c7b1c4e9eec
 
 https://medium.com/@tasslin
 
